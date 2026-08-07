@@ -146,10 +146,10 @@ function updateUI(data) {
         dataState.config = data.config;
     }
 
-    // Update Waypoints
-    if (JSON.stringify(data.waypoints) !== JSON.stringify(dataState.waypoints)) {
-        renderWaypoints(data.waypoints);
-        dataState.waypoints = data.waypoints;
+    // Update Shared GPS Points from chat
+    if (JSON.stringify(data.shared_points) !== JSON.stringify(dataState.shared_points)) {
+        renderSharedPoints(data.shared_points || []);
+        dataState.shared_points = data.shared_points;
     }
 
     // Update Participants and Locations
@@ -205,6 +205,38 @@ function loadGPXTrack(gpxString) {
     }).on('loaded', function(e) {
         map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
     }).addTo(map);
+
+    // Parse and render waypoints directly from GPX XML
+    try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(gpxString, "text/xml");
+        const wpts = xmlDoc.getElementsByTagName("wpt");
+        const waypoints = [];
+        for (let i = 0; i < wpts.length; i++) {
+            const wpt = wpts[i];
+            const lat = parseFloat(wpt.getAttribute("lat"));
+            const lng = parseFloat(wpt.getAttribute("lon"));
+            const nameEl = wpt.getElementsByTagName("name")[0];
+            const descEl = wpt.getElementsByTagName("desc")[0];
+            
+            let icon = 'pin';
+            const name = nameEl ? nameEl.textContent : `Point ${i + 1}`;
+            const desc = descEl ? descEl.textContent : '';
+            
+            if (name.toLowerCase().includes('ravi') || name.toLowerCase().includes('check')) {
+                icon = 'check';
+            } else if (name.toLowerCase().includes('drapeau') || name.toLowerCase().includes('flag')) {
+                icon = 'flag';
+            } else if (name.toLowerCase().includes('star') || name.toLowerCase().includes('etoile')) {
+                icon = 'star';
+            }
+
+            waypoints.push({ lat, lng, name, description: desc, icon });
+        }
+        renderWaypoints(waypoints);
+    } catch (err) {
+        console.error("Erreur lors de l'extraction des waypoints du GPX:", err);
+    }
 }
 
 function renderWaypoints(waypoints) {
@@ -371,4 +403,43 @@ function escapeHtml(text) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+const sharedPointMarkers = [];
+function renderSharedPoints(sharedPoints) {
+    // Clear old markers
+    sharedPointMarkers.forEach(m => map.removeLayer(m));
+    sharedPointMarkers.length = 0;
+
+    sharedPoints.forEach(sp => {
+        const customIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `
+                <div class="marker-pin" style="background-color: #10b981;">
+                    <i class="fa-solid fa-comment-dots"></i>
+                </div>
+            `,
+            iconSize: [30, 42],
+            iconAnchor: [15, 42],
+            popupAnchor: [0, -36]
+        });
+
+        const timeText = new Date(sp.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const popupText = `
+            <div style="font-family: var(--font-sans); color: #000; min-width: 160px; max-width: 250px;">
+                <strong style="color: #10b981; font-size: 0.95rem;">📍 Point partagé</strong><br>
+                <span style="font-size: 0.8rem; font-weight: 600; color: #333;">Par ${sp.sender}</span>
+                <span style="font-size: 0.75rem; color: #777; margin-left: 8px;">à ${timeText}</span>
+                <p style="font-size: 0.85rem; margin-top: 6px; line-height: 1.4; color: #111;">${escapeHtml(sp.text)}</p>
+                <hr style="margin: 6px 0; border: none; border-top: 1px dashed #ddd;">
+                <span style="font-size: 0.75rem; color: #666; font-family: monospace;">${sp.lat.toFixed(5)}, ${sp.lng.toFixed(5)}</span>
+            </div>
+        `;
+
+        const marker = L.marker([sp.lat, sp.lng], { icon: customIcon })
+            .bindPopup(popupText)
+            .addTo(map);
+
+        sharedPointMarkers.push(marker);
+    });
 }

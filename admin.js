@@ -39,13 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     document.getElementById('btn-upload-gpx').addEventListener('click', uploadGpxAndInfo);
     document.getElementById('btn-gen-qr').addEventListener('click', handleQrGeneration);
-    document.getElementById('btn-add-wp').addEventListener('click', addWaypoint);
     document.getElementById('btn-encrypt-save').addEventListener('click', saveEncryptedPAT);
 
     // Danger Zone buttons
     document.getElementById('btn-clear-locations').addEventListener('click', () => confirmAction('locations', clearLocations));
     document.getElementById('btn-clear-messages').addEventListener('click', () => confirmAction('messages', clearMessages));
-    document.getElementById('btn-clear-waypoints').addEventListener('click', () => confirmAction('waypoints', clearWaypoints));
 }
 
 // Fetch data.json from GitHub (read-only, no token needed for public repos!)
@@ -287,42 +285,6 @@ function generateQrCode(text) {
     });
 }
 
-// Add Waypoints
-async function addWaypoint() {
-    const token = getDecryptedToken();
-    if (!token) return;
-
-    const name = document.getElementById('wp-name').value.trim();
-    const desc = document.getElementById('wp-desc').value.trim();
-    const lat = parseFloat(document.getElementById('wp-lat').value);
-    const lng = parseFloat(document.getElementById('wp-lng').value);
-    const icon = document.getElementById('wp-icon').value;
-
-    if (!name || isNaN(lat) || isNaN(lng)) {
-        return alert('Veuillez remplir au moins le nom, la latitude et la longitude.');
-    }
-
-    const newWp = {
-        name: name,
-        description: desc,
-        lat: lat,
-        lng: lng,
-        icon: icon
-    };
-
-    if (!dataState.waypoints) dataState.waypoints = [];
-    dataState.waypoints.push(newWp);
-
-    const success = await pushDataToGitHub(`Ajout du Waypoint: ${name}`, token);
-    if (success) {
-        alert('Waypoint ajouté avec succès !');
-        document.getElementById('wp-name').value = '';
-        document.getElementById('wp-desc').value = '';
-        document.getElementById('wp-lat').value = '';
-        document.getElementById('wp-lng').value = '';
-    }
-}
-
 // Render participants table
 function loadParticipantsTable() {
     const tbody = document.querySelector('#participants-table tbody');
@@ -418,11 +380,3 @@ async function clearMessages() {
     if (success) alert('Chat effacé !');
 }
 
-// Clear Waypoints
-async function clearWaypoints() {
-    const token = getDecryptedToken();
-    if (!token || !dataState) return;
-    dataState.waypoints = [];
-    const success = await pushDataToGitHub("Suppression de tous les waypoints", token);
-    if (success) alert('Waypoints supprimés !');
-}

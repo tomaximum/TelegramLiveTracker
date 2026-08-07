@@ -15,7 +15,8 @@ if (!botToken || !githubRepo || !githubToken) {
 let localUpdates = {
     locations: {}, // telegram_id -> array of { lat, lng, speed, time }
     messages: [],  // array of { sender, text, time }
-    participants: [] // list of newly registered participants
+    participants: [], // list of newly registered participants
+    shared_points: [] // list of shared points from chat
 };
 
 let dataState = null;
@@ -166,6 +167,16 @@ async function runFinalSave() {
         changeReason.push("Messages chat");
     }
 
+    if (localUpdates.shared_points && localUpdates.shared_points.length > 0) {
+        if (!dataState.shared_points) dataState.shared_points = [];
+        dataState.shared_points.push(...localUpdates.shared_points);
+        if (dataState.shared_points.length > 50) {
+            dataState.shared_points = dataState.shared_points.slice(-50);
+        }
+        hasChanges = true;
+        changeReason.push("Points partagés");
+    }
+
     if (hasChanges) {
         await pushGitHubState("Fin de session: " + changeReason.join(" & "));
     }
@@ -240,6 +251,15 @@ async function pushGitHubState(commitMessage) {
             // Merge config, waypoints, participants
             dataState.config = latestState.config;
             dataState.waypoints = latestState.waypoints;
+
+            if (!dataState.shared_points) dataState.shared_points = [];
+            const combinedSharedPoints = [...(latestState.shared_points || [])];
+            dataState.shared_points.forEach(sp => {
+                if (!combinedSharedPoints.some(csp => csp.time === sp.time && csp.sender === sp.sender)) {
+                    combinedSharedPoints.push(sp);
+                }
+            });
+            dataState.shared_points = combinedSharedPoints;
 
             // Merge participants (combining newly registered and existing ones)
             const combinedParticipants = [...latestState.participants];
@@ -361,6 +381,18 @@ setInterval(async () => {
         changeReason.push("Synchronisation des messages de chat");
     }
 
+    // Merge shared points
+    if (localUpdates.shared_points && localUpdates.shared_points.length > 0) {
+        if (!dataState.shared_points) dataState.shared_points = [];
+        dataState.shared_points.push(...localUpdates.shared_points);
+        if (dataState.shared_points.length > 50) {
+            dataState.shared_points = dataState.shared_points.slice(-50);
+        }
+        localUpdates.shared_points = [];
+        hasChanges = true;
+        changeReason.push("Points GPS partagés dans le chat");
+    }
+
     if (hasChanges) {
         await pushGitHubState(changeReason.join(" & "));
     }
@@ -441,7 +473,7 @@ function bufferLocation(msg) {
 
 // Sync group messages
 bot.on('message', async (msg) => {
-    if (msg.chat.type === 'private' || msg.location || (msg.text && msg.text.startsWith('/'))) {
+    if (msg.chat.type === 'private' || (msg.text && msg.text.startsWith('/'))) {
         return;
     }
 
@@ -454,17 +486,64 @@ bot.on('message', async (msg) => {
         return;
     }
 
-    if (!msg.text) return;
-
     const from = msg.from;
     const participant = dataState ? dataState.participants.find(p => p.telegram_id === from.id) : null;
     const senderName = participant ? participant.display_name : [from.first_name, from.last_name].filter(Boolean).join(' ') || `User ${from.id}`;
 
-    localUpdates.messages.push({
-        sender: senderName,
-        text: msg.text,
-        time: new Date().toISOString()
-    });
+    // Extract GPS point if any
+    let isGpsPoint = false;
+    let lat = null;
+    let lng = null;
+
+    if (msg.location) {
+        isGpsPoint = true;
+        lat = msg.location.latitude;
+        lng = msg.location.longitude;
+    } else if (msg.text) {
+        // Regex for raw coordinates (e.g. 48.8584, 2.2945)
+        const coordRegex = /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/;
+        const match = msg.text.match(coordRegex);
+        if (match) {
+            isGpsPoint = true;
+            lat = parseFloat(match[1]);
+            lng = parseFloat(match[2]);
+        } else {
+            // Google Maps link: google.com/maps?q=lat,lng
+            const gmapsRegex = /google\..*\/maps.*[q|place]\/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/i;
+            const matchGmaps = msg.text.match(gmapsRegex);
+            if (matchGmaps) {
+                isGpsPoint = true;
+                lat = parseFloat(matchGmaps[1]);
+                lng = parseFloat(matchGmaps[2]);
+            }
+        }
+    }
+
+    if (isGpsPoint && lat !== null && lng !== null) {
+        if (!localUpdates.shared_points) localUpdates.shared_points = [];
+        localUpdates.shared_points.push({
+            sender: senderName,
+            text: msg.text || "📍 Position partagée",
+            lat: lat,
+            lng: lng,
+            time: new Date().toISOString()
+        });
+        console.log(`[Télémétrie] Point GPS partagé détecté de ${senderName} : ${lat}, ${lng}`);
+    }
+
+    if (msg.text) {
+        localUpdates.messages.push({
+            sender: senderName,
+            text: msg.text,
+            time: new Date().toISOString()
+        });
+    } else if (msg.location) {
+        localUpdates.messages.push({
+            sender: senderName,
+            text: `📍 Position partagée : ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            time: new Date().toISOString()
+        });
+    }
 });
 
 // Setup admin group command

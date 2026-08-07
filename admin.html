@@ -158,42 +158,9 @@
             </div>
         </div>
 
-        <!-- Column 2: Participants & Waypoints Management -->
+        <!-- Column 2: Participants Management -->
         <div style="display: flex; flex-direction: column; gap: 30px;">
             
-            <!-- Waypoints Config -->
-            <div class="admin-card">
-                <h2 class="section-title"><i class="fa-solid fa-location-dot" style="margin-right: 8px;"></i> Ajouter un Waypoint</h2>
-                <div class="form-group">
-                    <label>Nom du Point d'Intérêt</label>
-                    <input type="text" id="wp-name" class="form-control" placeholder="Ex: Ravitaillement 1">
-                </div>
-                <div class="form-group">
-                    <label>Description / Note</label>
-                    <input type="text" id="wp-desc" class="form-control" placeholder="Ex: Eau, fruits et secours">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="form-group">
-                        <label>Latitude</label>
-                        <input type="number" step="any" id="wp-lat" class="form-control" placeholder="48.8584">
-                    </div>
-                    <div class="form-group">
-                        <label>Longitude</label>
-                        <input type="number" step="any" id="wp-lng" class="form-control" placeholder="2.2945">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Icône</label>
-                    <select id="wp-icon" class="form-control">
-                        <option value="pin">📍 Épingle</option>
-                        <option value="flag">🚩 Drapeau</option>
-                        <option value="star">⭐ Étoile</option>
-                        <option value="check">✅ Ravitaillement / Checkpoint</option>
-                    </select>
-                </div>
-                <button class="btn" id="btn-add-wp"><i class="fa-solid fa-plus"></i> Ajouter le Waypoint</button>
-            </div>
-
             <!-- Participants Manager -->
             <div class="admin-card">
                 <h2 class="section-title"><i class="fa-solid fa-users" style="margin-right: 8px;"></i> Gestion des Participants</h2>
@@ -221,7 +188,6 @@
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                     <button class="btn btn-danger btn-secondary" id="btn-clear-locations"><i class="fa-solid fa-trash-can"></i> Effacer l'historique des positions</button>
                     <button class="btn btn-danger btn-secondary" id="btn-clear-messages"><i class="fa-solid fa-trash-can"></i> Effacer le chat</button>
-                    <button class="btn btn-danger btn-secondary" id="btn-clear-waypoints"><i class="fa-solid fa-trash-can"></i> Supprimer tous les Waypoints</button>
                 </div>
             </div>
         </div>
