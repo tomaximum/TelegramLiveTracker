@@ -115,13 +115,13 @@ function scheduleRunSession() {
 
 // Send telegram messages to group if group ID is saved
 async function sendTelemetryMessage(text) {
-    if (!dataState || !dataState.config || !dataState.config.telegram_group_id) {
-        console.log(`[Télémétrie] Impossible d'envoyer la notification (ID de groupe inconnu).\nMessage: ${text}`);
+    if (!dataState || !dataState.config || !dataState.config.telegram_admin_group_id) {
+        console.log(`[Télémétrie] ID de groupe d'administration inconnu.\nMessage: ${text}`);
         return;
     }
 
     try {
-        await bot.sendMessage(dataState.config.telegram_group_id, text, { parse_mode: 'Markdown' });
+        await bot.sendMessage(dataState.config.telegram_admin_group_id, text, { parse_mode: 'Markdown' });
         console.log(`[Télémétrie Envoyée] ${text.replace(/\n/g, ' ')}`);
     } catch (err) {
         console.error("[Télémétrie] Erreur d'envoi Telegram:", err.message);
@@ -441,16 +441,16 @@ function bufferLocation(msg) {
 
 // Sync group messages
 bot.on('message', async (msg) => {
-    // Capture group ID dynamically when a message is sent in group
-    if (msg.chat.type !== 'private') {
-        if (dataState && dataState.config && (!dataState.config.telegram_group_id || dataState.config.telegram_group_id !== msg.chat.id)) {
-            dataState.config.telegram_group_id = msg.chat.id;
-            console.log(`[Télémétrie] ID du groupe Telegram capturé : ${msg.chat.id}`);
-            await pushGitHubState("Capture de l'identifiant du groupe Telegram");
-        }
+    if (msg.chat.type === 'private' || msg.location || (msg.text && msg.text.startsWith('/'))) {
+        return;
     }
 
-    if (msg.chat.type === 'private' || msg.location || (msg.text && msg.text.startsWith('/'))) {
+    if (!dataState || !dataState.config || !dataState.config.telegram_chat_group_id) {
+        return;
+    }
+
+    // Only sync if the message comes from the participant group
+    if (msg.chat.id !== dataState.config.telegram_chat_group_id) {
         return;
     }
 
@@ -465,6 +465,34 @@ bot.on('message', async (msg) => {
         text: msg.text,
         time: new Date().toISOString()
     });
+});
+
+// Setup admin group command
+bot.onText(/\/setup admin/, async (msg) => {
+    if (msg.chat.type === 'private') {
+        bot.sendMessage(msg.chat.id, "⚠️ Cette commande doit être exécutée dans le groupe Telegram destiné à l'administration/télémétrie.");
+        return;
+    }
+    if (!dataState) return bot.sendMessage(msg.chat.id, "⚠️ L'état n'est pas encore chargé.");
+
+    dataState.config.telegram_admin_group_id = msg.chat.id;
+    console.log(`[Configuration] Groupe d'administration configuré avec l'ID : ${msg.chat.id}`);
+    bot.sendMessage(msg.chat.id, "✅ Ce groupe a été configuré comme le groupe d'administration et de télémétrie.");
+    await pushGitHubState("Configuration du groupe d'administration Telegram");
+});
+
+// Setup chat/participants group command
+bot.onText(/\/setup chat/, async (msg) => {
+    if (msg.chat.type === 'private') {
+        bot.sendMessage(msg.chat.id, "⚠️ Cette commande doit être exécutée dans le groupe Telegram destiné aux participants.");
+        return;
+    }
+    if (!dataState) return bot.sendMessage(msg.chat.id, "⚠️ L'état n'est pas encore chargé.");
+
+    dataState.config.telegram_chat_group_id = msg.chat.id;
+    console.log(`[Configuration] Groupe de discussion configuré avec l'ID : ${msg.chat.id}`);
+    bot.sendMessage(msg.chat.id, "✅ Ce groupe a été configuré comme le groupe de discussion des participants.");
+    await pushGitHubState("Configuration du groupe des participants Telegram");
 });
 
 // Handle /status command

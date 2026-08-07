@@ -128,21 +128,32 @@
                 <button class="btn btn-secondary" id="btn-encrypt-save"><i class="fa-solid fa-user-shield"></i> Chiffrer et sauvegarder sur GitHub</button>
             </div>
 
-            <!-- Participant QR Code Registration -->
+            <!-- Participant Telegram Configuration & QR Code -->
             <div class="admin-card">
-                <h2 class="section-title"><i class="fa-solid fa-qrcode" style="margin-right: 8px;"></i> QR Code d'Inscription</h2>
+                <h2 class="section-title"><i class="fa-solid fa-qrcode" style="margin-right: 8px;"></i> Configuration Telegram & QR Code</h2>
                 <p style="font-size: 0.85rem; color: var(--text-secondary);">
-                    Ce QR Code permet aux participants de rejoindre facilement le groupe Telegram et d'interagir avec le bot.
+                    Saisissez le lien d'invitation du groupe Telegram des <strong>participants</strong>. Il sera accessible via le bouton "Rejoindre l'événement" sur la page d'accueil et via le QR Code ci-dessous.
                 </p>
                 <div class="form-group">
-                    <label>Lien d'invitation du Groupe Telegram ou Username du Bot</label>
-                    <input type="text" id="tg-link" class="form-control" placeholder="https://t.me/joinchat/... ou https://t.me/NomDuBot">
+                    <label>Lien d'invitation du Groupe Participants</label>
+                    <input type="text" id="tg-link" class="form-control" placeholder="https://t.me/joinchat/...">
                 </div>
-                <button class="btn" id="btn-gen-qr"><i class="fa-solid fa-rotate"></i> Générer le QR Code</button>
+                <button class="btn" id="btn-gen-qr"><i class="fa-solid fa-rotate"></i> Enregistrer et générer le QR Code</button>
                 
                 <div class="qr-container" id="qr-section" style="display: none;">
                     <div id="qrcode"></div>
-                    <p style="font-size: 0.85rem; font-weight: 500;">Scannez pour rejoindre le live tracker</p>
+                    <p style="font-size: 0.85rem; font-weight: 500;">Scannez pour rejoindre le groupe participants</p>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 5px;">
+                    <h3 style="font-size: 0.85rem; font-weight: 600; color: #3b82f6; margin-bottom: 8px;"><i class="fa-solid fa-circle-info"></i> Liaison des groupes (Via Telegram) :</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                        Pour lier vos deux groupes au Live Tracker, ajoutez le Bot comme membre et administrateur dans chacun des groupes, puis envoyez les commandes suivantes :
+                    </p>
+                    <ul style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 15px; margin-top: 8px; line-height: 1.5;">
+                        <li>Dans le groupe <strong>Administration/Télémétrie</strong> : <code>/setup admin</code></li>
+                        <li>Dans le groupe <strong>Participants (Chat & Cartographie)</strong> : <code>/setup chat</code></li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -206,7 +217,7 @@
             <!-- Danger Zone -->
             <div class="admin-card danger-zone">
                 <h2 class="section-title" style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</h2>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Attention, ces actions suppriment définitivement les données dans Supabase.</p>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Attention, ces actions suppriment définitivement les données dans le fichier data.json sur GitHub.</p>
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                     <button class="btn btn-danger btn-secondary" id="btn-clear-locations"><i class="fa-solid fa-trash-can"></i> Effacer l'historique des positions</button>
                     <button class="btn btn-danger btn-secondary" id="btn-clear-messages"><i class="fa-solid fa-trash-can"></i> Effacer le chat</button>

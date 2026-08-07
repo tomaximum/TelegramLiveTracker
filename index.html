@@ -23,12 +23,17 @@
     <div id="map"></div>
 
     <!-- Header Banner -->
-    <div class="header-banner glass-panel">
-        <i class="fa-solid fa-compass fa-spin fa-2xl" style="color: #3b82f6;"></i>
-        <div>
-            <h1 id="event-title">Live Tracker</h1>
-            <p id="event-description">Localisation des participants en temps réel</p>
+    <div class="header-banner glass-panel" style="display: flex; justify-content: space-between; align-items: center; min-width: 320px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <i class="fa-solid fa-compass fa-spin fa-2xl" style="color: #3b82f6;"></i>
+            <div>
+                <h1 id="event-title">Live Tracker</h1>
+                <p id="event-description">Localisation des participants en temps réel</p>
+            </div>
         </div>
+        <a id="btn-join-event" href="#" target="_blank" class="btn btn-join-event" style="display: none; align-items: center; gap: 8px; text-decoration: none; background: linear-gradient(135deg, #229ED9, #1b85b8); color: white; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; transition: transform 0.2s, box-shadow 0.2s; margin-left: 20px; white-space: nowrap;">
+            <i class="fa-brands fa-telegram fa-lg"></i> Rejoindre l'événement
+        </a>
     </div>
 
     <!-- Participant Sidebar -->

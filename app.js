@@ -130,6 +130,16 @@ function updateUI(data) {
         document.getElementById('event-title').textContent = data.config.title || 'Live Tracker';
         document.getElementById('event-description').textContent = data.config.description || '';
         
+        const btnJoin = document.getElementById('btn-join-event');
+        if (btnJoin) {
+            if (data.config.telegram_link) {
+                btnJoin.href = data.config.telegram_link;
+                btnJoin.style.display = 'flex';
+            } else {
+                btnJoin.style.display = 'none';
+            }
+        }
+
         if (data.config.gpx && (!dataState.config || data.config.gpx !== dataState.config.gpx)) {
             loadGPXTrack(data.config.gpx);
         }
