@@ -5,7 +5,8 @@
     "gpx": "",
     "telegram_link": "",
     "cleanup_days": 3,
-    "last_cleanup_date": ""
+    "last_cleanup_date": "",
+    "encrypted_pat": "U2FsdGVkX19bnYhb4br93EzQHTYRlk1DRbnvryukSxa6BXl8Wi7sQK4LCCMNApR0TYNyF2T8VZLWI+zt+M1gtw=="
   },
   "participants": [],
   "locations": {},
