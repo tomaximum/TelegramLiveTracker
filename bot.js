@@ -99,12 +99,34 @@ function scheduleRunSession() {
     const sessionMinutes = Math.min(27, minutesLeft);
     console.log(`[Planificateur] Événement actif ! Lancement de la session d'écoute pour : ${sessionMinutes} minutes (Fin prévue de l'événement dans ${minutesLeft} mins).`);
 
+    // Send Startup Telemetry Notification
+    sendTelemetryMessage(`📢 *Live Tracker Bot en ligne !*\n⏱️ Session active : \`${sessionMinutes} mins\` (événement actif)\n👥 Participants : \`${dataState.participants.length}\`\n📍 Positions enregistrées : \`${Object.keys(dataState.locations).length}\``);
+
     setTimeout(async () => {
         console.log(`[Planificateur] Fin de la session de ${sessionMinutes} minutes. Sauvegarde et fermeture...`);
+        
+        // Send Shutdown Telemetry Notification
+        await sendTelemetryMessage(`🛑 *Session temporaire terminée* (${sessionMinutes} mins). Sauvegarde de l'état sur GitHub. Le planificateur relancera la session suivante sous peu.`);
+        
         // Final merge and save
         await runFinalSave();
         process.exit(0);
     }, sessionMinutes * 60 * 1000);
+}
+
+// Send telegram messages to group if group ID is saved
+async function sendTelemetryMessage(text) {
+    if (!dataState || !dataState.config || !dataState.config.telegram_group_id) {
+        console.log(`[Télémétrie] Impossible d'envoyer la notification (ID de groupe inconnu).\nMessage: ${text}`);
+        return;
+    }
+
+    try {
+        await bot.sendMessage(dataState.config.telegram_group_id, text, { parse_mode: 'Markdown' });
+        console.log(`[Télémétrie Envoyée] ${text.replace(/\n/g, ' ')}`);
+    } catch (err) {
+        console.error("[Télémétrie] Erreur d'envoi Telegram:", err.message);
+    }
 }
 
 // Force a final save before exiting
@@ -419,7 +441,16 @@ function bufferLocation(msg) {
 }
 
 // Sync group messages
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
+    // Capture group ID dynamically when a message is sent in group
+    if (msg.chat.type !== 'private') {
+        if (dataState && dataState.config && (!dataState.config.telegram_group_id || dataState.config.telegram_group_id !== msg.chat.id)) {
+            dataState.config.telegram_group_id = msg.chat.id;
+            console.log(`[Télémétrie] ID du groupe Telegram capturé : ${msg.chat.id}`);
+            await pushGitHubState("Capture de l'identifiant du groupe Telegram");
+        }
+    }
+
     if (msg.chat.type === 'private' || msg.location || (msg.text && msg.text.startsWith('/'))) {
         return;
     }
@@ -435,6 +466,43 @@ bot.on('message', (msg) => {
         text: msg.text,
         time: new Date().toISOString()
     });
+});
+
+// Handle /status command
+bot.onText(/\/status/, (msg) => {
+    if (!dataState) {
+        bot.sendMessage(msg.chat.id, "⚠️ L'état du bot n'est pas encore complètement chargé.");
+        return;
+    }
+    
+    const isManual = process.env.IS_MANUAL_TRIGGER === 'true';
+    const participantsCount = dataState.participants ? dataState.participants.length : 0;
+    const activeLocationsCount = Object.keys(dataState.locations || {}).length;
+    
+    let timeText = "";
+    if (isManual) {
+        timeText = `Mode manuel (${process.env.MANUAL_DURATION}h)`;
+    } else if (dataState.config.event_start) {
+        const eventStart = new Date(dataState.config.event_start);
+        const durationHours = dataState.config.event_duration || 4;
+        const eventEnd = new Date(eventStart.getTime() + durationHours * 60 * 60 * 1000);
+        const now = new Date();
+        const leftMs = eventEnd - now;
+        if (leftMs > 0) {
+            timeText = `${Math.ceil(leftMs / 60000)} mins restantes`;
+        } else {
+            timeText = "Terminé";
+        }
+    } else {
+        timeText = "Non planifié";
+    }
+
+    const report = `📊 *Status du Live Tracker* :\n` +
+                   `⏱️ *Temps* : \`${timeText}\`\n` +
+                   `👥 *Participants enregistrés* : \`${participantsCount}\`\n` +
+                   `📍 *Marqueurs actifs* : \`${activeLocationsCount}\``;
+    
+    bot.sendMessage(msg.chat.id, report, { parse_mode: 'Markdown' });
 });
 
 // Load state and begin
