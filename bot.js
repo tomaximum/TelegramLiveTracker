@@ -473,6 +473,10 @@ function bufferLocation(msg) {
 
 // Sync group messages
 bot.on('message', async (msg) => {
+    if (msg.chat.type !== 'private') {
+        console.log(`[Message Groupe Reçu] ID du canal: ${msg.chat.id} | Expéditeur: ${msg.from.first_name} | Texte: ${msg.text || '[Aucun texte]'}`);
+    }
+
     if (msg.chat.type === 'private' || (msg.text && msg.text.startsWith('/'))) {
         return;
     }
@@ -483,6 +487,7 @@ bot.on('message', async (msg) => {
 
     // Only sync if the message comes from the participant group
     if (msg.chat.id !== dataState.config.telegram_chat_group_id) {
+        console.log(`[Message Ignoré] Le message provient de l'ID ${msg.chat.id}, mais le groupe de participants configuré est ${dataState.config.telegram_chat_group_id}`);
         return;
     }
 
