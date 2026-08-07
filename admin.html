@@ -71,7 +71,7 @@
 
             <!-- GPX Route Upload -->
             <div class="admin-card">
-                <h2 class="section-title"><i class="fa-solid fa-route" style="margin-right: 8px;"></i> Fichier de Tracé (GPX)</h2>
+                <h2 class="section-title"><i class="fa-solid fa-route" style="margin-right: 8px;"></i> Configuration de l'Événement & GPX</h2>
                 <div class="form-group">
                     <label>Nom de la Randonnée / Événement</label>
                     <input type="text" id="event-title-input" class="form-control" placeholder="Ex: Randonnée Nocturne 2026">
@@ -80,9 +80,25 @@
                     <label>Description</label>
                     <input type="text" id="event-desc-input" class="form-control" placeholder="Ex: Parcours de 25km">
                 </div>
-                <div class="form-group">
-                    <label>Nettoyage automatique (jours)</label>
-                    <input type="number" id="event-cleanup-input" class="form-control" value="3" min="1" placeholder="Ex: 3">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label>Date de l'événement</label>
+                        <input type="date" id="event-date-input" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Heure de début (Locale)</label>
+                        <input type="time" id="event-time-input" class="form-control">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label>Durée de suivi (heures)</label>
+                        <input type="number" id="event-duration-input" class="form-control" value="4" min="1" max="24">
+                    </div>
+                    <div class="form-group">
+                        <label>Nettoyage auto (jours)</label>
+                        <input type="number" id="event-cleanup-input" class="form-control" value="3" min="1">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Importer un fichier GPX</label>

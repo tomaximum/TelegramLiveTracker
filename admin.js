@@ -175,6 +175,9 @@ function populateUI() {
     document.getElementById('event-title-input').value = dataState.config.title || '';
     document.getElementById('event-desc-input').value = dataState.config.description || '';
     document.getElementById('event-cleanup-input').value = dataState.config.cleanup_days || 3;
+    document.getElementById('event-date-input').value = dataState.config.event_date || '';
+    document.getElementById('event-time-input').value = dataState.config.event_time || '';
+    document.getElementById('event-duration-input').value = dataState.config.event_duration || 4;
 
     if (dataState.config.telegram_link) {
         document.getElementById('tg-link').value = dataState.config.telegram_link;
@@ -192,11 +195,24 @@ async function uploadGpxAndInfo() {
     const title = document.getElementById('event-title-input').value.trim();
     const desc = document.getElementById('event-desc-input').value.trim();
     const cleanupDays = parseInt(document.getElementById('event-cleanup-input').value) || 3;
+    const eventDate = document.getElementById('event-date-input').value;
+    const eventTime = document.getElementById('event-time-input').value;
+    const eventDuration = parseInt(document.getElementById('event-duration-input').value) || 4;
     const gpxFileInput = document.getElementById('gpx-file');
 
     dataState.config.title = title;
     dataState.config.description = desc;
     dataState.config.cleanup_days = cleanupDays;
+    dataState.config.event_date = eventDate;
+    dataState.config.event_time = eventTime;
+    dataState.config.event_duration = eventDuration;
+
+    if (eventDate && eventTime) {
+        const localDateTime = new Date(`${eventDate}T${eventTime}`);
+        dataState.config.event_start = localDateTime.toISOString();
+    } else {
+        dataState.config.event_start = '';
+    }
 
     if (gpxFileInput.files.length > 0) {
         const file = gpxFileInput.files[0];
@@ -205,12 +221,12 @@ async function uploadGpxAndInfo() {
         reader.onload = async function(e) {
             dataState.config.gpx = e.target.result;
             const success = await pushDataToGitHub("Mise à jour du tracé GPX et de la configuration", token);
-            if (success) alert('Configuration et GPX mis à jour avec succès !');
+            if (success) alert('Configuration, dates et GPX mis à jour avec succès !');
         };
         reader.readAsText(file);
     } else {
         const success = await pushDataToGitHub("Mise à jour de la configuration de l'événement", token);
-        if (success) alert('Configuration mise à jour avec succès !');
+        if (success) alert('Configuration et dates mises à jour avec succès !');
     }
 }
 

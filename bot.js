@@ -50,9 +50,88 @@ async function loadGitHubState() {
         // Execute automated cleanup upon start
         await runAutomatedCleanup();
 
+        // Check if event is active, and schedule run/termination
+        scheduleRunSession();
+
     } catch (err) {
         console.error("Erreur lors du chargement de l'état GitHub:", err.message);
-        process.exit(1); // Exit if we cannot read initial database
+        process.exit(1);
+    }
+}
+
+// Check if event is active and determine runtime duration (max 30 minutes per cron cycle)
+function scheduleRunSession() {
+    if (!dataState || !dataState.config || !dataState.config.event_start) {
+        console.log("Aucune date de début programmée. Arrêt immédiat.");
+        process.exit(0);
+    }
+
+    const eventStart = new Date(dataState.config.event_start);
+    const durationHours = dataState.config.event_duration || 4;
+    const eventEnd = new Date(eventStart.getTime() + (durationHours * 60 * 60 * 1000));
+    const now = new Date();
+
+    if (now < eventStart || now > eventEnd) {
+        console.log(`[Planificateur] Pas d'événement actif actuellement.\nDébut prévu : ${eventStart.toLocaleString()}\nFin prévue : ${eventEnd.toLocaleString()}\nDate actuelle : ${now.toLocaleString()}\nArrêt.`);
+        process.exit(0);
+    }
+
+    // Calculate remaining time
+    const msLeft = eventEnd.getTime() - now.getTime();
+    const minutesLeft = Math.ceil(msLeft / 60000);
+
+    // Run for at most 27 minutes (matching the 30-minute GitHub Action Cron trigger interval with a 3-minute safety gap)
+    const sessionMinutes = Math.min(27, minutesLeft);
+    console.log(`[Planificateur] Événement actif ! Lancement de la session d'écoute pour : ${sessionMinutes} minutes (Fin prévue de l'événement dans ${minutesLeft} mins).`);
+
+    setTimeout(async () => {
+        console.log(`[Planificateur] Fin de la session de ${sessionMinutes} minutes. Sauvegarde et fermeture...`);
+        // Final merge and save
+        await runFinalSave();
+        process.exit(0);
+    }, sessionMinutes * 60 * 1000);
+}
+
+// Force a final save before exiting
+async function runFinalSave() {
+    let hasChanges = false;
+    let changeReason = [];
+
+    if (localUpdates.participants.length > 0) {
+        localUpdates.participants.forEach(p => {
+            if (!dataState.participants.some(dp => dp.telegram_id === p.telegram_id)) {
+                dataState.participants.push(p);
+                hasChanges = true;
+            }
+        });
+        changeReason.push("Inscriptions");
+    }
+
+    for (const tgId in localUpdates.locations) {
+        if (localUpdates.locations[tgId].length > 0) {
+            if (!dataState.locations[tgId]) dataState.locations[tgId] = [];
+            dataState.locations[tgId].push(...localUpdates.locations[tgId]);
+            if (dataState.locations[tgId].length > 150) {
+                dataState.locations[tgId] = dataState.locations[tgId].slice(-150);
+            }
+            hasChanges = true;
+        }
+    }
+    if (hasChanges && changeReason.length === 0) {
+        changeReason.push("Mise à jour coordonnées");
+    }
+
+    if (localUpdates.messages.length > 0) {
+        dataState.messages.push(...localUpdates.messages);
+        if (dataState.messages.length > 50) {
+            dataState.messages = dataState.messages.slice(-50);
+        }
+        hasChanges = true;
+        changeReason.push("Messages chat");
+    }
+
+    if (hasChanges) {
+        await pushGitHubState("Fin de session: " + changeReason.join(" & "));
     }
 }
 
