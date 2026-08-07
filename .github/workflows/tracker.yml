@@ -1,0 +1,39 @@
+name: Telegram Live Tracker Bot Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Durée de fonctionnement en heures (max 6)'
+        required: true
+        default: '6'
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Run Telegram Bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          # Set a timeout for the runner based on user input
+          TIMEOUT_MINUTES=$(( ${{ github.event.inputs.duration }} * 60 ))
+          echo "Démarrage du Bot Telegram pour $TIMEOUT_MINUTES minutes..."
+          
+          # Run the bot and auto-terminate after the duration
+          timeout "${TIMEOUT_MINUTES}m" node bot.js || echo "Le temps imparti est écoulé. Arrêt du bot."

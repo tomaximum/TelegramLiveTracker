@@ -1,0 +1,14 @@
+{
+  "config": {
+    "title": "Mon Événement Live Tracker",
+    "description": "Suivi en direct des participants via Telegram",
+    "gpx": "",
+    "telegram_link": "",
+    "cleanup_days": 3,
+    "last_cleanup_date": ""
+  },
+  "participants": [],
+  "locations": {},
+  "waypoints": [],
+  "messages": []
+}

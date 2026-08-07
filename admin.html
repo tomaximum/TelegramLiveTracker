@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Live Tracker</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        body {
+            overflow: auto; /* Allow scrolling on Admin page */
+            height: auto;
+            background: #090d16;
+        }
+        .header {
+            max-width: 1200px;
+            margin: 40px auto 10px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            color: white;
+        }
+        .danger-zone {
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Console d'Administration</h1>
+        <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Retour au Live Map</a>
+    </div>
+
+    <div class="admin-container">
+        
+        <!-- Column 1: Config & Telegram Registration -->
+        <div style="display: flex; flex-direction: column; gap: 30px;">
+            
+            <!-- GitHub Config -->
+            <div class="admin-card">
+                <h2 class="section-title"><i class="fa-brands fa-github" style="margin-right: 8px;"></i> Configuration GitHub</h2>
+                <div class="form-group">
+                    <label>GitHub Owner (Utilisateur ou Organisation)</label>
+                    <input type="text" id="db-url" class="form-control" placeholder="Ex: tomaximum">
+                </div>
+                <div class="form-group">
+                    <label>Nom du Dépôt (Repository)</label>
+                    <input type="text" id="db-repo" class="form-control" placeholder="Ex: TelegramLiveTracker">
+                </div>
+                <div class="form-group">
+                    <label>Personal Access Token (PAT) GitHub</label>
+                    <input type="password" id="db-key" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                    <p style="font-size: 0.75rem; color: var(--text-secondary);">
+                        Ce jeton est stocké uniquement dans votre navigateur pour commiter les changements de tracé GPX/Waypoints dans le dépôt.
+                    </p>
+                </div>
+                <button class="btn" id="btn-save-db"><i class="fa-solid fa-floppy-disk"></i> Enregistrer la configuration GitHub</button>
+            </div>
+
+            <!-- GPX Route Upload -->
+            <div class="admin-card">
+                <h2 class="section-title"><i class="fa-solid fa-route" style="margin-right: 8px;"></i> Fichier de Tracé (GPX)</h2>
+                <div class="form-group">
+                    <label>Nom de la Randonnée / Événement</label>
+                    <input type="text" id="event-title-input" class="form-control" placeholder="Ex: Randonnée Nocturne 2026">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="event-desc-input" class="form-control" placeholder="Ex: Parcours de 25km">
+                </div>
+                <div class="form-group">
+                    <label>Nettoyage automatique (jours)</label>
+                    <input type="number" id="event-cleanup-input" class="form-control" value="3" min="1" placeholder="Ex: 3">
+                </div>
+                <div class="form-group">
+                    <label>Importer un fichier GPX</label>
+                    <input type="file" id="gpx-file" class="form-control" accept=".gpx">
+                </div>
+                <button class="btn" id="btn-upload-gpx"><i class="fa-solid fa-cloud-arrow-up"></i> Mettre à jour l'événement et le tracé</button>
+            </div>
+
+            <!-- Participant QR Code Registration -->
+            <div class="admin-card">
+                <h2 class="section-title"><i class="fa-solid fa-qrcode" style="margin-right: 8px;"></i> QR Code d'Inscription</h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    Ce QR Code permet aux participants de rejoindre facilement le groupe Telegram et d'interagir avec le bot.
+                </p>
+                <div class="form-group">
+                    <label>Lien d'invitation du Groupe Telegram ou Username du Bot</label>
+                    <input type="text" id="tg-link" class="form-control" placeholder="https://t.me/joinchat/... ou https://t.me/NomDuBot">
+                </div>
+                <button class="btn" id="btn-gen-qr"><i class="fa-solid fa-rotate"></i> Générer le QR Code</button>
+                
+                <div class="qr-container" id="qr-section" style="display: none;">
+                    <div id="qrcode"></div>
+                    <p style="font-size: 0.85rem; font-weight: 500;">Scannez pour rejoindre le live tracker</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Participants & Waypoints Management -->
+        <div style="display: flex; flex-direction: column; gap: 30px;">
+            
+            <!-- Waypoints Config -->
+            <div class="admin-card">
+                <h2 class="section-title"><i class="fa-solid fa-location-dot" style="margin-right: 8px;"></i> Ajouter un Waypoint</h2>
+                <div class="form-group">
+                    <label>Nom du Point d'Intérêt</label>
+                    <input type="text" id="wp-name" class="form-control" placeholder="Ex: Ravitaillement 1">
+                </div>
+                <div class="form-group">
+                    <label>Description / Note</label>
+                    <input type="text" id="wp-desc" class="form-control" placeholder="Ex: Eau, fruits et secours">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" step="any" id="wp-lat" class="form-control" placeholder="48.8584">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" step="any" id="wp-lng" class="form-control" placeholder="2.2945">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Icône</label>
+                    <select id="wp-icon" class="form-control">
+                        <option value="pin">📍 Épingle</option>
+                        <option value="flag">🚩 Drapeau</option>
+                        <option value="star">⭐ Étoile</option>
+                        <option value="check">✅ Ravitaillement / Checkpoint</option>
+                    </select>
+                </div>
+                <button class="btn" id="btn-add-wp"><i class="fa-solid fa-plus"></i> Ajouter le Waypoint</button>
+            </div>
+
+            <!-- Participants Manager -->
+            <div class="admin-card">
+                <h2 class="section-title"><i class="fa-solid fa-users" style="margin-right: 8px;"></i> Gestion des Participants</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left;" id="participants-table">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                <th style="padding: 10px;">Participant</th>
+                                <th style="padding: 10px;">ID Telegram</th>
+                                <th style="padding: 10px;">Couleur / Icône</th>
+                                <th style="padding: 10px; text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="admin-card danger-zone">
+                <h2 class="section-title" style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Attention, ces actions suppriment définitivement les données dans Supabase.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-danger btn-secondary" id="btn-clear-locations"><i class="fa-solid fa-trash-can"></i> Effacer l'historique des positions</button>
+                    <button class="btn btn-danger btn-secondary" id="btn-clear-messages"><i class="fa-solid fa-trash-can"></i> Effacer le chat</button>
+                    <button class="btn btn-danger btn-secondary" id="btn-clear-waypoints"><i class="fa-solid fa-trash-can"></i> Supprimer tous les Waypoints</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Code generation JS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Custom Admin Script -->
+    <script src="admin.js"></script>
+</body>
+</html>

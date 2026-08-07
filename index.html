@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Tracker Public - Telegram</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Map container -->
+    <div id="map"></div>
+
+    <!-- Header Banner -->
+    <div class="header-banner glass-panel">
+        <i class="fa-solid fa-compass fa-spin fa-2xl" style="color: #3b82f6;"></i>
+        <div>
+            <h1 id="event-title">Live Tracker</h1>
+            <p id="event-description">Localisation des participants en temps réel</p>
+        </div>
+    </div>
+
+    <!-- Participant Sidebar -->
+    <div class="sidebar glass-panel">
+        <h2 class="section-title">Participants (<span id="participant-count">0</span>)</h2>
+        <div class="participant-list" id="participants">
+            <!-- Loading indicator -->
+            <div style="text-align: center; color: var(--text-secondary); margin-top: 20px;">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Chargement...
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel glass-panel">
+        <div class="chat-header">
+            <h2 class="section-title" style="margin: 0;"><i class="fa-brands fa-telegram" style="color: #229ED9; margin-right: 6px;"></i> Chat Rando</h2>
+            <span id="chat-status" style="font-size: 0.75rem; color: var(--success);"><i class="fa-solid fa-wifi"></i> Live</span>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div style="text-align: center; color: var(--text-secondary); margin-top: 20px;">
+                Aucun message récent
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Leaflet GPX plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Custom Application Code -->
+    <script src="app.js"></script>
+</body>
+</html>
