@@ -10,7 +10,8 @@
     "event_date": "2026-08-07",
     "event_time": "08:00",
     "event_duration": 96,
-    "event_start": "2026-08-07T06:00:00.000Z"
+    "event_start": "2026-08-07T06:00:00.000Z",
+    "telegram_chat_group_id": -5065775225
   },
   "participants": [
     {
