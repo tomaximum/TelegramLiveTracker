@@ -64,7 +64,11 @@
                     <label>Mot de passe d'administration</label>
                     <input type="password" id="admin-password" class="form-control" placeholder="Entrez le mot de passe de l'événement">
                 </div>
-                <p style="font-size: 0.75rem; color: var(--text-secondary);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <input type="checkbox" id="remember-password" style="cursor: pointer; width: 16px; height: 16px;">
+                    <label for="remember-password" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; user-select: none;">Se souvenir de moi sur cet appareil</label>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">
                     Ce mot de passe sert à déchiffrer votre jeton d'accès GitHub stocké de façon sécurisée dans le fichier de données.
                 </p>
             </div>

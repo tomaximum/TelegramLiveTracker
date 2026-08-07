@@ -20,6 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTgLink = localStorage.getItem('TELEGRAM_LINK') || '';
     document.getElementById('tg-link').value = savedTgLink;
 
+    // Load saved password if any
+    const savedPass = localStorage.getItem('ADMIN_PASSWORD') || '';
+    if (savedPass) {
+        document.getElementById('admin-password').value = savedPass;
+        document.getElementById('remember-password').checked = true;
+    }
+
     loadDataFromGitHub().then(() => {
         if (savedTgLink) {
             generateQrCode(savedTgLink);
@@ -67,6 +74,8 @@ async function loadDataFromGitHub() {
 // Helper to decrypt GITHUB_TOKEN
 function getDecryptedToken() {
     const passwordInput = document.getElementById('admin-password').value.trim();
+    const rememberMe = document.getElementById('remember-password').checked;
+
     if (!passwordInput) {
         alert("Veuillez entrer le Mot de passe d'administration.");
         return null;
@@ -84,6 +93,14 @@ function getDecryptedToken() {
         if (!decryptedToken || !decryptedToken.startsWith('gh')) {
             throw new Error("Mot de passe incorrect ou jeton invalide.");
         }
+
+        // Persist password if requested
+        if (rememberMe) {
+            localStorage.setItem('ADMIN_PASSWORD', passwordInput);
+        } else {
+            localStorage.removeItem('ADMIN_PASSWORD');
+        }
+
         return decryptedToken;
     } catch (err) {
         alert("Mot de passe d'administration incorrect ou décryptage échoué.");
@@ -129,6 +146,7 @@ async function pushDataToGitHub(commitMessage, token) {
 async function saveEncryptedPAT() {
     const pat = document.getElementById('init-pat').value.trim();
     const password = document.getElementById('init-password').value.trim();
+    const rememberMe = document.getElementById('remember-password').checked;
 
     if (!pat || !password) {
         return alert("Veuillez saisir le jeton PAT et le mot de passe de chiffrement.");
@@ -163,6 +181,13 @@ async function saveEncryptedPAT() {
     const success = await pushDataToGitHub("Chiffrement et configuration du jeton d'administration (PAT)", pat);
     if (success) {
         alert("Jeton chiffré et enregistré dans le dépôt avec succès ! Vous pouvez maintenant utiliser votre mot de passe d'administration.");
+        
+        // Auto pre-fill main password input
+        document.getElementById('admin-password').value = password;
+        if (rememberMe) {
+            localStorage.setItem('ADMIN_PASSWORD', password);
+        }
+
         document.getElementById('init-pat').value = '';
         document.getElementById('init-password').value = '';
         populateUI(); // Refresh UI lists
