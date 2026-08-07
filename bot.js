@@ -249,7 +249,7 @@ async function pushGitHubState(commitMessage) {
             const latestState = JSON.parse(decodedContent);
 
             // Merge config, waypoints, participants
-            dataState.config = latestState.config;
+            dataState.config = { ...latestState.config, ...dataState.config };
             dataState.waypoints = latestState.waypoints;
 
             if (!dataState.shared_points) dataState.shared_points = [];
