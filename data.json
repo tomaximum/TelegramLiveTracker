@@ -928,6 +928,12 @@
     ]
   },
   "waypoints": [],
-  "messages": [],
+  "messages": [
+    {
+      "sender": "Thomas DEBELLE",
+      "text": "Are you ready ?",
+      "time": "2026-08-07T12:15:00.145Z"
+    }
+  ],
   "shared_points": []
 }
