@@ -60,8 +60,7 @@ async function loadDataFromGitHub() {
 
         populateUI();
     } catch (err) {
-        console.error(err);
-        alert("Erreur lors du chargement des données depuis GitHub. Vérifiez que votre dépôt est public et contient le fichier data.json.");
+        console.warn("Dépôt privé ou non-initialisé. En attente de la configuration initiale du jeton (PAT).", err);
     }
 }
 
