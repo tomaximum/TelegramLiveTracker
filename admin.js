@@ -135,8 +135,25 @@ async function saveEncryptedPAT() {
         return alert("Veuillez saisir le jeton PAT et le mot de passe de chiffrement.");
     }
 
+    // Try to load the data first using the provided PAT if it failed initially (e.g., private repo)
     if (!dataState) {
-        return alert("Les données ne sont pas prêtes.");
+        try {
+            const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${pat}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            if (!response.ok) throw new Error("Jeton invalide ou fichier introuvable.");
+            
+            const fileInfo = await response.json();
+            dataSha = fileInfo.sha;
+            const contentDecoded = decodeURIComponent(escape(atob(fileInfo.content)));
+            dataState = JSON.parse(contentDecoded);
+        } catch (err) {
+            return alert("Erreur : Impossible de récupérer data.json. Vérifiez la validité de votre jeton PAT et le nom du dépôt.");
+        }
     }
 
     // Encrypt token
@@ -149,6 +166,7 @@ async function saveEncryptedPAT() {
         alert("Jeton chiffré et enregistré dans le dépôt avec succès ! Vous pouvez maintenant utiliser votre mot de passe d'administration.");
         document.getElementById('init-pat').value = '';
         document.getElementById('init-password').value = '';
+        populateUI(); // Refresh UI lists
     }
 }
 
