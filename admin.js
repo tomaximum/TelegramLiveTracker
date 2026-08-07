@@ -48,24 +48,46 @@ function setupEventListeners() {
 
 // Fetch data.json from GitHub (read-only, no token needed for public repos!)
 async function loadDataFromGitHub() {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
+    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/data.json?t=${new Date().getTime()}`;
     
     try {
-        const response = await fetch(url, {
-            headers: {
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        if (!response.ok) throw new Error("Impossible de charger le fichier data.json depuis GitHub.");
+        const response = await fetch(rawUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error("Impossible de charger data.json depuis le CDN raw.");
         
-        const fileInfo = await response.json();
-        dataSha = fileInfo.sha;
-        const contentDecoded = decodeURIComponent(escape(atob(fileInfo.content)));
-        dataState = JSON.parse(contentDecoded);
-
+        dataState = await response.json();
         populateUI();
+        
+        // Fetch SHA silently in the background
+        fetchShaSilently();
     } catch (err) {
-        console.warn("Dépôt privé ou non-initialisé. En attente de la configuration initiale du jeton (PAT).", err);
+        console.warn("Échec du chargement direct depuis le CDN raw. Tentative via l'API GitHub contents...", err);
+        // Fallback to contents API
+        const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
+        try {
+            const apiRes = await fetch(apiUrl, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+            if (apiRes.ok) {
+                const fileInfo = await apiRes.json();
+                dataSha = fileInfo.sha;
+                const contentDecoded = decodeURIComponent(escape(atob(fileInfo.content)));
+                dataState = JSON.parse(contentDecoded);
+                populateUI();
+            }
+        } catch (apiErr) {
+            console.error("Échec complet du chargement de data.json", apiErr);
+        }
+    }
+}
+
+async function fetchShaSilently() {
+    try {
+        const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
+        const res = await fetch(apiUrl, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+        if (res.ok) {
+            const fileInfo = await res.json();
+            dataSha = fileInfo.sha;
+        }
+    } catch (e) {
+        console.warn("Impossible de récupérer le SHA en tâche de fond:", e);
     }
 }
 
@@ -111,9 +133,22 @@ async function pushDataToGitHub(commitMessage, token) {
     if (!token) return false;
     
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
-    const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(dataState, null, 2))));
     
     try {
+        // Query the latest SHA right before saving to prevent conflicts
+        const shaRes = await fetch(url, {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (shaRes.ok) {
+            const fileInfo = await shaRes.json();
+            dataSha = fileInfo.sha;
+        }
+
+        const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(dataState, null, 2))));
+        
         const response = await fetch(url, {
             method: 'PUT',
             headers: {
