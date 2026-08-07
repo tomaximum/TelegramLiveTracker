@@ -104,10 +104,14 @@ function initMap() {
     }).addTo(map);
 }
 
-// Fetch data.json from GitHub raw content (unlimited hits, bypasses cache via timestamp)
 async function fetchData() {
     const timestamp = new Date().getTime();
-    const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/data.json?t=${timestamp}`;
+    let url = `./data.json?t=${timestamp}`;
+    
+    // Fallback to raw CDN if running locally or not on GitHub Pages
+    if (window.location.protocol === 'file:' || !window.location.hostname.includes('.github.io')) {
+        url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/data.json?t=${timestamp}`;
+    }
     
     try {
         const response = await fetch(url, { cache: 'no-store' });
