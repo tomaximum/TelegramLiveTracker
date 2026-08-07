@@ -6,7 +6,11 @@
     "telegram_link": "https://t.me/+kJs29k0aKE00YmY0",
     "cleanup_days": 6,
     "last_cleanup_date": "",
-    "encrypted_pat": "U2FsdGVkX1+mO0nQL6OOpbtZI8d4xnG3BwyGSz/2lV9Mnj22ZDjdpTDIuAgmGkiUXIC8uvfgqagf5bWbhiFiCg=="
+    "encrypted_pat": "U2FsdGVkX1+mO0nQL6OOpbtZI8d4xnG3BwyGSz/2lV9Mnj22ZDjdpTDIuAgmGkiUXIC8uvfgqagf5bWbhiFiCg==",
+    "event_date": "2026-08-07",
+    "event_time": "08:00",
+    "event_duration": 96,
+    "event_start": "2026-08-07T06:00:00.000Z"
   },
   "participants": [],
   "locations": {},
