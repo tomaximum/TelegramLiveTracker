@@ -1,6 +1,5 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const fetch = require('node-fetch'); // Required on Node 16, native on Node 18+
 
 // Configure parameters
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
