@@ -174,12 +174,17 @@ function loadGPXTrack(gpxString) {
         map.removeLayer(gpxLayer);
     }
 
+    const blankImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
     gpxLayer = new L.GPX(gpxString, {
         async: true,
         marker_options: {
-            startIconUrl: null,
-            endIconUrl: null,
-            shadowUrl: null
+            startIconUrl: blankImg,
+            endIconUrl: blankImg,
+            shadowUrl: blankImg,
+            wptIconUrls: {
+                '': blankImg
+            }
         },
         polyline_options: {
             color: '#3b82f6',
