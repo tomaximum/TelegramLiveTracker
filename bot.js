@@ -59,8 +59,23 @@ async function loadGitHubState() {
     }
 }
 
-// Check if event is active and determine runtime duration (max 30 minutes per cron cycle)
+// Check if event is active and determine runtime duration (max 27 minutes per cron cycle)
 function scheduleRunSession() {
+    const isManual = process.env.IS_MANUAL_TRIGGER === 'true';
+
+    if (isManual) {
+        const durationHours = parseInt(process.env.MANUAL_DURATION) || 6;
+        console.log(`[Planificateur] Déclenchement MANUEL détecté ! Fonctionnement forcé pendant ${durationHours} heures.`);
+        
+        // We will run for the specified manual duration
+        setTimeout(async () => {
+            console.log(`[Planificateur] Fin du fonctionnement manuel de ${durationHours}h. Arrêt.`);
+            await runFinalSave();
+            process.exit(0);
+        }, durationHours * 60 * 60 * 1000);
+        return;
+    }
+
     if (!dataState || !dataState.config || !dataState.config.event_start) {
         console.log("Aucune date de début programmée. Arrêt immédiat.");
         process.exit(0);

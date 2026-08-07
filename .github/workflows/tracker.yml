@@ -36,10 +36,11 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          IS_MANUAL_TRIGGER: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          MANUAL_DURATION: ${{ github.event.inputs.duration || '6' }}
         run: |
           # Set a timeout for the runner based on user input
-          TIMEOUT_MINUTES=$(( ${{ github.event.inputs.duration }} * 60 ))
-          echo "Démarrage du Bot Telegram pour $TIMEOUT_MINUTES minutes..."
+          TIMEOUT_MINUTES=$(( ${{ github.event.inputs.duration || 6 }} * 60 ))
+          echo "Démarrage du Bot Telegram (Manuel: $IS_MANUAL_TRIGGER)..."
           
-          # Run the bot and auto-terminate after the duration
-          timeout "${TIMEOUT_MINUTES}m" node bot.js || echo "Le temps imparti est écoulé. Arrêt du bot."
+          timeout "${TIMEOUT_MINUTES}m" node bot.js || echo "Arrêt du bot."
