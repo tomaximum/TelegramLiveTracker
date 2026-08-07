@@ -397,7 +397,7 @@ setInterval(async () => {
         await pushGitHubState(changeReason.join(" & "));
     }
 
-}, 60000);
+}, 15000);
 
 // Get/Register participant
 function registerParticipant(from) {
