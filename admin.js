@@ -1,51 +1,39 @@
 // GitHub API Configuration & Initialization
-let GITHUB_OWNER = localStorage.getItem('GITHUB_OWNER') || '';
-let GITHUB_REPO = localStorage.getItem('GITHUB_REPO') || '';
-let GITHUB_TOKEN = localStorage.getItem('GITHUB_TOKEN') || '';
+let GITHUB_OWNER = localStorage.getItem('GITHUB_OWNER') || 'tomaximum';
+let GITHUB_REPO = localStorage.getItem('GITHUB_REPO') || 'TelegramLiveTracker';
 
 let dataState = null;
 let dataSha = '';
 let qrCodeGenerator = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // If not set, try to auto-detect from GitHub Pages URL, otherwise use defaults
+    // If not set, try to auto-detect from GitHub Pages URL
     const host = window.location.hostname;
-    if (host.includes('.github.io') && (!GITHUB_OWNER || !GITHUB_REPO)) {
+    if (host.includes('.github.io')) {
         GITHUB_OWNER = host.split('.')[0];
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         GITHUB_REPO = pathParts[0] || '';
         localStorage.setItem('GITHUB_OWNER', GITHUB_OWNER);
         localStorage.setItem('GITHUB_REPO', GITHUB_REPO);
-    } else if (!GITHUB_OWNER || !GITHUB_REPO) {
-        GITHUB_OWNER = 'tomaximum';
-        GITHUB_REPO = 'TelegramLiveTracker';
-        localStorage.setItem('GITHUB_OWNER', GITHUB_OWNER);
-        localStorage.setItem('GITHUB_REPO', GITHUB_REPO);
     }
-
-    document.getElementById('db-url').value = GITHUB_OWNER;
-    document.getElementById('db-repo').value = GITHUB_REPO;
-    document.getElementById('db-key').value = GITHUB_TOKEN;
 
     const savedTgLink = localStorage.getItem('TELEGRAM_LINK') || '';
     document.getElementById('tg-link').value = savedTgLink;
 
-    if (GITHUB_OWNER && GITHUB_REPO && GITHUB_TOKEN) {
-        loadDataFromGitHub().then(() => {
-            if (savedTgLink) {
-                generateQrCode(savedTgLink);
-            }
-        });
-    }
+    loadDataFromGitHub().then(() => {
+        if (savedTgLink) {
+            generateQrCode(savedTgLink);
+        }
+    });
 
     setupEventListeners();
 });
 
 function setupEventListeners() {
-    document.getElementById('btn-save-db').addEventListener('click', saveGitHubConfig);
     document.getElementById('btn-upload-gpx').addEventListener('click', uploadGpxAndInfo);
     document.getElementById('btn-gen-qr').addEventListener('click', handleQrGeneration);
     document.getElementById('btn-add-wp').addEventListener('click', addWaypoint);
+    document.getElementById('btn-encrypt-save').addEventListener('click', saveEncryptedPAT);
 
     // Danger Zone buttons
     document.getElementById('btn-clear-locations').addEventListener('click', () => confirmAction('locations', clearLocations));
@@ -53,30 +41,13 @@ function setupEventListeners() {
     document.getElementById('btn-clear-waypoints').addEventListener('click', () => confirmAction('waypoints', clearWaypoints));
 }
 
-function saveGitHubConfig() {
-    const owner = document.getElementById('db-url').value.trim();
-    const repo = document.getElementById('db-repo').value.trim();
-    const token = document.getElementById('db-key').value.trim();
-
-    if (owner && repo && token) {
-        localStorage.setItem('GITHUB_OWNER', owner);
-        localStorage.setItem('GITHUB_REPO', repo);
-        localStorage.setItem('GITHUB_TOKEN', token);
-        alert('Configuration GitHub enregistrée !');
-        window.location.reload();
-    } else {
-        alert('Veuillez remplir tous les champs.');
-    }
-}
-
-// Fetch data.json using GitHub Contents API
+// Fetch data.json from GitHub (read-only, no token needed for public repos!)
 async function loadDataFromGitHub() {
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
     
     try {
         const response = await fetch(url, {
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json'
             }
         });
@@ -84,19 +55,47 @@ async function loadDataFromGitHub() {
         
         const fileInfo = await response.json();
         dataSha = fileInfo.sha;
-        // Decode base64 content
         const contentDecoded = decodeURIComponent(escape(atob(fileInfo.content)));
         dataState = JSON.parse(contentDecoded);
 
         populateUI();
     } catch (err) {
         console.error(err);
-        alert("Erreur lors de la connexion à GitHub. Vérifiez vos identifiants et votre jeton (PAT).");
+        alert("Erreur lors du chargement des données depuis GitHub. Vérifiez que votre dépôt est public et contient le fichier data.json.");
     }
 }
 
-// Push updated dataState back to GitHub
-async function pushDataToGitHub(commitMessage) {
+// Helper to decrypt GITHUB_TOKEN
+function getDecryptedToken() {
+    const passwordInput = document.getElementById('admin-password').value.trim();
+    if (!passwordInput) {
+        alert("Veuillez entrer le Mot de passe d'administration.");
+        return null;
+    }
+
+    if (!dataState || !dataState.config || !dataState.config.encrypted_pat) {
+        alert("Aucun jeton d'accès GitHub chiffré n'a été trouvé dans data.json. Veuillez configurer le jeton ci-dessous en premier.");
+        return null;
+    }
+
+    try {
+        const decryptedBytes = CryptoJS.AES.decrypt(dataState.config.encrypted_pat, passwordInput);
+        const decryptedToken = decryptedBytes.toString(CryptoJS.enc.Utf8);
+        
+        if (!decryptedToken || !decryptedToken.startsWith('gh')) {
+            throw new Error("Mot de passe incorrect ou jeton invalide.");
+        }
+        return decryptedToken;
+    } catch (err) {
+        alert("Mot de passe d'administration incorrect ou décryptage échoué.");
+        return null;
+    }
+}
+
+// Push updated dataState back to GitHub using the supplied token
+async function pushDataToGitHub(commitMessage, token) {
+    if (!token) return false;
+    
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data.json`;
     const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(dataState, null, 2))));
     
@@ -104,7 +103,7 @@ async function pushDataToGitHub(commitMessage) {
         const response = await fetch(url, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Authorization': `token ${token}`,
                 'Accept': 'application/vnd.github.v3+json',
                 'Content-Type': 'application/json'
             },
@@ -115,10 +114,10 @@ async function pushDataToGitHub(commitMessage) {
             })
         });
 
-        if (!response.ok) throw new Error("Échec de la mise à jour de data.json sur GitHub.");
+        if (!response.ok) throw new Error("Échec de la mise à jour sur GitHub. Vérifiez la validité du jeton (PAT).");
         
         const result = await response.json();
-        dataSha = result.content.sha; // update SHA for next commit
+        dataSha = result.content.sha; // update SHA
         return true;
     } catch (err) {
         console.error(err);
@@ -127,10 +126,35 @@ async function pushDataToGitHub(commitMessage) {
     }
 }
 
+// Initial setup helper to encrypt PAT and save it in data.json using itself
+async function saveEncryptedPAT() {
+    const pat = document.getElementById('init-pat').value.trim();
+    const password = document.getElementById('init-password').value.trim();
+
+    if (!pat || !password) {
+        return alert("Veuillez saisir le jeton PAT et le mot de passe de chiffrement.");
+    }
+
+    if (!dataState) {
+        return alert("Les données ne sont pas prêtes.");
+    }
+
+    // Encrypt token
+    const encrypted = CryptoJS.AES.encrypt(pat, password).toString();
+    dataState.config.encrypted_pat = encrypted;
+
+    // Save back to GitHub using the entered PAT itself
+    const success = await pushDataToGitHub("Chiffrement et configuration du jeton d'administration (PAT)", pat);
+    if (success) {
+        alert("Jeton chiffré et enregistré dans le dépôt avec succès ! Vous pouvez maintenant utiliser votre mot de passe d'administration.");
+        document.getElementById('init-pat').value = '';
+        document.getElementById('init-password').value = '';
+    }
+}
+
 function populateUI() {
     if (!dataState) return;
 
-    // Config panel
     document.getElementById('event-title-input').value = dataState.config.title || '';
     document.getElementById('event-desc-input').value = dataState.config.description || '';
     document.getElementById('event-cleanup-input').value = dataState.config.cleanup_days || 3;
@@ -140,13 +164,13 @@ function populateUI() {
         localStorage.setItem('TELEGRAM_LINK', dataState.config.telegram_link);
     }
 
-    // Participants list
     loadParticipantsTable();
 }
 
-// Upload GPX, Title, Description, and Cleanup period
+// Upload GPX, Title, Description, and Cleanup days
 async function uploadGpxAndInfo() {
-    if (!dataState) return alert("Données non chargées.");
+    const token = getDecryptedToken();
+    if (!token) return;
 
     const title = document.getElementById('event-title-input').value.trim();
     const desc = document.getElementById('event-desc-input').value.trim();
@@ -163,27 +187,30 @@ async function uploadGpxAndInfo() {
         
         reader.onload = async function(e) {
             dataState.config.gpx = e.target.result;
-            const success = await pushDataToGitHub("Mise à jour du tracé GPX et de la configuration de l'événement");
-            if (success) alert('Tracé GPX et configuration mis à jour sur GitHub !');
+            const success = await pushDataToGitHub("Mise à jour du tracé GPX et de la configuration", token);
+            if (success) alert('Configuration et GPX mis à jour avec succès !');
         };
         reader.readAsText(file);
     } else {
-        const success = await pushDataToGitHub("Mise à jour de la configuration de l'événement");
-        if (success) alert('Configuration mise à jour sur GitHub !');
+        const success = await pushDataToGitHub("Mise à jour de la configuration de l'événement", token);
+        if (success) alert('Configuration mise à jour avec succès !');
     }
 }
 
 function handleQrGeneration() {
+    const token = getDecryptedToken();
+    if (!token) return;
+
     const link = document.getElementById('tg-link').value.trim();
     if (!link) return alert('Veuillez saisir un lien valide.');
     
-    if (dataState) {
-        dataState.config.telegram_link = link;
-        pushDataToGitHub("Mise à jour du lien d'inscription Telegram");
-    }
-
-    localStorage.setItem('TELEGRAM_LINK', link);
-    generateQrCode(link);
+    dataState.config.telegram_link = link;
+    pushDataToGitHub("Mise à jour du lien d'inscription Telegram", token).then((success) => {
+        if (success) {
+            localStorage.setItem('TELEGRAM_LINK', link);
+            generateQrCode(link);
+        }
+    });
 }
 
 function generateQrCode(text) {
@@ -204,7 +231,8 @@ function generateQrCode(text) {
 
 // Add Waypoints
 async function addWaypoint() {
-    if (!dataState) return alert("Données non chargées.");
+    const token = getDecryptedToken();
+    if (!token) return;
 
     const name = document.getElementById('wp-name').value.trim();
     const desc = document.getElementById('wp-desc').value.trim();
@@ -227,7 +255,7 @@ async function addWaypoint() {
     if (!dataState.waypoints) dataState.waypoints = [];
     dataState.waypoints.push(newWp);
 
-    const success = await pushDataToGitHub(`Ajout du Waypoint: ${name}`);
+    const success = await pushDataToGitHub(`Ajout du Waypoint: ${name}`, token);
     if (success) {
         alert('Waypoint ajouté avec succès !');
         document.getElementById('wp-name').value = '';
@@ -276,24 +304,29 @@ function loadParticipantsTable() {
             </td>
         `;
 
-        // Update properties
+        // Change triggers
         tr.querySelector('.color-picker').addEventListener('change', async (e) => {
+            const token = getDecryptedToken();
+            if (!token) return;
             p.color = e.target.value;
-            await pushDataToGitHub(`Mise à jour couleur de ${p.display_name}`);
+            await pushDataToGitHub(`Mise à jour couleur de ${p.display_name}`, token);
         });
 
         tr.querySelector('.icon-selector').addEventListener('change', async (e) => {
+            const token = getDecryptedToken();
+            if (!token) return;
             p.icon = e.target.value;
-            await pushDataToGitHub(`Mise à jour icône de ${p.display_name}`);
+            await pushDataToGitHub(`Mise à jour icône de ${p.display_name}`, token);
         });
 
         tr.querySelector('.btn-delete').addEventListener('click', async () => {
+            const token = getDecryptedToken();
+            if (!token) return;
             if (confirm(`Voulez-vous vraiment retirer le participant ${p.display_name} ?`)) {
                 dataState.participants = dataState.participants.filter(pt => pt.telegram_id !== p.telegram_id);
-                // Also clean up locations if any
                 if (dataState.locations[p.telegram_id]) delete dataState.locations[p.telegram_id];
                 
-                const success = await pushDataToGitHub(`Suppression du participant ${p.display_name}`);
+                const success = await pushDataToGitHub(`Suppression du participant ${p.display_name}`, token);
                 if (success) loadParticipantsTable();
             }
         });
@@ -309,26 +342,29 @@ function confirmAction(type, callback) {
     }
 }
 
-// Clear GPS history (Manual Cleanup)
+// Clear GPS history
 async function clearLocations() {
-    if (!dataState) return;
+    const token = getDecryptedToken();
+    if (!token || !dataState) return;
     dataState.locations = {};
-    const success = await pushDataToGitHub("Effacement de l'historique des positions");
+    const success = await pushDataToGitHub("Effacement de l'historique des positions", token);
     if (success) alert('Historique des positions vidé !');
 }
 
 // Clear Chat Messages
 async function clearMessages() {
-    if (!dataState) return;
+    const token = getDecryptedToken();
+    if (!token || !dataState) return;
     dataState.messages = [];
-    const success = await pushDataToGitHub("Effacement de l'historique du chat");
+    const success = await pushDataToGitHub("Effacement de l'historique du chat", token);
     if (success) alert('Chat effacé !');
 }
 
 // Clear Waypoints
 async function clearWaypoints() {
-    if (!dataState) return;
+    const token = getDecryptedToken();
+    if (!token || !dataState) return;
     dataState.waypoints = [];
-    const success = await pushDataToGitHub("Suppression de tous les waypoints");
+    const success = await pushDataToGitHub("Suppression de tous les waypoints", token);
     if (success) alert('Waypoints supprimés !');
 }

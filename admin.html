@@ -57,30 +57,16 @@
         <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Retour au Live Map</a>
     </div>
 
-    <div class="admin-container">
-        
-        <!-- Column 1: Config & Telegram Registration -->
-        <div style="display: flex; flex-direction: column; gap: 30px;">
-            
-            <!-- GitHub Config -->
+            <!-- GitHub Config & Password -->
             <div class="admin-card">
-                <h2 class="section-title"><i class="fa-brands fa-github" style="margin-right: 8px;"></i> Configuration GitHub</h2>
+                <h2 class="section-title"><i class="fa-solid fa-lock" style="margin-right: 8px;"></i> Accès Administrateur</h2>
                 <div class="form-group">
-                    <label>GitHub Owner (Utilisateur ou Organisation)</label>
-                    <input type="text" id="db-url" class="form-control" placeholder="Ex: tomaximum">
+                    <label>Mot de passe d'administration</label>
+                    <input type="password" id="admin-password" class="form-control" placeholder="Entrez le mot de passe de l'événement">
                 </div>
-                <div class="form-group">
-                    <label>Nom du Dépôt (Repository)</label>
-                    <input type="text" id="db-repo" class="form-control" placeholder="Ex: TelegramLiveTracker">
-                </div>
-                <div class="form-group">
-                    <label>Personal Access Token (PAT) GitHub</label>
-                    <input type="password" id="db-key" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-                    <p style="font-size: 0.75rem; color: var(--text-secondary);">
-                        Ce jeton est stocké uniquement dans votre navigateur pour commiter les changements de tracé GPX/Waypoints dans le dépôt.
-                    </p>
-                </div>
-                <button class="btn" id="btn-save-db"><i class="fa-solid fa-floppy-disk"></i> Enregistrer la configuration GitHub</button>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">
+                    Ce mot de passe sert à déchiffrer votre jeton d'accès GitHub stocké de façon sécurisée dans le fichier de données.
+                </p>
             </div>
 
             <!-- GPX Route Upload -->
@@ -103,6 +89,23 @@
                     <input type="file" id="gpx-file" class="form-control" accept=".gpx">
                 </div>
                 <button class="btn" id="btn-upload-gpx"><i class="fa-solid fa-cloud-arrow-up"></i> Mettre à jour l'événement et le tracé</button>
+            </div>
+
+            <!-- Encryption Helper Tool -->
+            <div class="admin-card" style="border: 1px dashed rgba(59, 130, 246, 0.3);">
+                <h2 class="section-title" style="color: #3b82f6;"><i class="fa-solid fa-key" style="margin-right: 8px;"></i> Configuration Initiale du Jeton</h2>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                    À faire une seule fois : chiffrez votre jeton d'accès GitHub (PAT) et enregistrez-le dans le dépôt.
+                </p>
+                <div class="form-group">
+                    <label>GitHub Personal Access Token (PAT)</label>
+                    <input type="password" id="init-pat" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>Créer un mot de passe d'administration</label>
+                    <input type="password" id="init-password" class="form-control" placeholder="Ex: Randonnee2026!">
+                </div>
+                <button class="btn btn-secondary" id="btn-encrypt-save"><i class="fa-solid fa-user-shield"></i> Chiffrer et sauvegarder sur GitHub</button>
             </div>
 
             <!-- Participant QR Code Registration -->
@@ -194,7 +197,9 @@
 
     </div>
 
-    <!-- Supabase JS CDN -->
+    <!-- CryptoJS for local encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- Supabase JS CDN (unused but kept if needed, can be removed) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- QR Code generation JS CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
