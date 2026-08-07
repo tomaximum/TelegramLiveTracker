@@ -482,6 +482,7 @@ bot.on('message', async (msg) => {
     }
 
     if (!dataState || !dataState.config || !dataState.config.telegram_chat_group_id) {
+        console.log(`[Message Ignoré] Le canal de chat de groupe n'est pas configuré. Veuillez envoyer la commande /setup chat dans le groupe Telegram des participants.`);
         return;
     }
 
