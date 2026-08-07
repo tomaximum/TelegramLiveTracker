@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initMap();
     startPolling();
+    initMobileToggles();
 });
 
 // Prompt for local testing configuration
@@ -442,4 +443,43 @@ function renderSharedPoints(sharedPoints) {
 
         sharedPointMarkers.push(marker);
     });
+}
+
+function initMobileToggles() {
+    const fabParticipants = document.getElementById('fab-participants');
+    const fabChat = document.getElementById('fab-chat');
+    const sidebar = document.querySelector('.sidebar');
+    const chatPanel = document.querySelector('.chat-panel');
+
+    if (!fabParticipants || !fabChat) return;
+
+    fabParticipants.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isActive = sidebar.classList.toggle('active');
+        fabParticipants.classList.toggle('active', isActive);
+        
+        // Hide chat if open
+        chatPanel.classList.remove('active');
+        fabChat.classList.remove('active');
+    });
+
+    fabChat.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isActive = chatPanel.classList.toggle('active');
+        fabChat.classList.toggle('active', isActive);
+        
+        // Hide participants if open
+        sidebar.classList.remove('active');
+        fabParticipants.classList.remove('active');
+    });
+
+    // Close overlays when clicking on the map
+    if (map) {
+        map.on('click', () => {
+            sidebar.classList.remove('active');
+            chatPanel.classList.remove('active');
+            fabParticipants.classList.remove('active');
+            fabChat.classList.remove('active');
+        });
+    }
 }
